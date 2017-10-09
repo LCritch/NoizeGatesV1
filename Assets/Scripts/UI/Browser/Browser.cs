@@ -139,7 +139,7 @@ public class Browser : MonoBehaviour
                 foreach (string s in Directory.GetFiles(drives[currentDrive] + currentDirectory))
                 {
                     string name = Path.GetFileName(s);
-                    
+                 
                     FileInfo info = new FileInfo(s);
                     if(extensions.Contains(info.Extension))
                         files.Add(name);

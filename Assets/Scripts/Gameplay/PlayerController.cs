@@ -7,8 +7,11 @@ public class PlayerController : MonoBehaviour
 {
 
     public Rigidbody2D rb2d;
+	public GameObject PlayerCube;
+    private Lean.LeanFinger Finger;
 
     //http://stackoverflow.com/questions/27712233/swipe-gestures-on-android-in-unity
+    //http://forum.unity3d.com/threads/jumping-script-in-a-platformer.75398/
 
 
 
@@ -23,13 +26,15 @@ public class PlayerController : MonoBehaviour
     private bool PlayerAlive;
     public bool grounded;
     private bool CanJump;
-    private bool CanFly;
     private bool CanDash;
+	public bool isOnBottom;
+	public bool isOnTop;
+    public bool isDashing;
+
 
     //Bools for holding info on what each playerstate does
     private bool Jump;
-    private bool Dash;
-    private bool Fly;
+    public bool Dash;
     private bool SwitchUp;
     private bool SwitchDown;
 
@@ -39,82 +44,84 @@ public class PlayerController : MonoBehaviour
 	protected virtual void OnEnable()
 	{
 		// Hook into the OnFingerTap event
-		Lean.LeanTouch.OnFingerTap += OnFingerTap;
+        //Lean.LeanTouch.OnFingerTap += OnFingerTap;
 
 		// Hook into the OnSwipe event
 		Lean.LeanTouch.OnFingerSwipe += OnFingerSwipe;
 
-		//Hook into the OnFingerHeldDown event
-//		Lean.LeanTouch.OnFingerHeldDown += OnFingerHeldDown;
 	}
 	
 	protected virtual void OnDisable()
 	{
 		// Unhook into the OnFingerTap event
-		Lean.LeanTouch.OnFingerTap -= OnFingerTap;
+        //Lean.LeanTouch.OnFingerTap -= OnFingerTap;
 
 		// Hook into the OnSwipe event
 		Lean.LeanTouch.OnFingerSwipe -= OnFingerSwipe;
 
-		//Hook into the OnFingerHeldDown event
-//		Lean.LeanTouch.OnFingerHeldDown -= OnFingerHeldDown;
 	}
 
     // Use this for initialization
     void Start()
     {
-        JumpHeight = 0.0f;
-        DashSpeed = 500.0f;
+        Physics2D.gravity = new Vector2(0, -9.81f);
+        DashSpeed = 3.0f;
+		isOnBottom = true;
 
     }
 
 
-//	public void OnFingerHeldDown(Lean.LeanFinger finger)
-//	{
-//		if (finger.IsOverGui == false && grounded && CanFly) 
-//		{
-//			Fly = true;
-//		}
-//
-//	}
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Ground"))
+            grounded = true;
+        Debug.Log("Player Grounded");
 
-	public void OnFingerTap(Lean.LeanFinger finger)
-	{
-		if (finger.IsOverGui == false && grounded && CanJump) {
-			Debug.Log ("Player Touch Jumped");
-			Jump = true;
+    }
 
-		}
-	}
-
-	public void OnFingerSwipe(Lean.LeanFinger finger)
-	{
-		Vector2 swipe = finger.SwipeDelta;
-
-		if (swipe.x > Mathf.Abs(swipe.y) &&CanDash && !grounded)
-		{
-			Dash  = true;
-		}
-
-		if (swipe.y < -Mathf.Abs(swipe.x) && grounded)
-		{
-			SwitchDown = true;
-			SwitchUp = false;
-		}
-		
-		if (swipe.y > Mathf.Abs(swipe.x) && grounded)
-		{
-			SwitchUp = true;
-			SwitchDown = false;
-		}
-	}
+    void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.CompareTag("Ground"))
+            grounded = false;
+        Debug.Log("Player in air");
+    }
 
     // Update is called once per frame
     void Update()
     {
 
-        
+        for (int i = 0; i < Input.touchCount; i++)
+        {
+            Touch touch = Input.GetTouch(i);
 
+            if(touch.phase == TouchPhase.Ended && touch.tapCount == 1)
+            {
+                if (grounded && CanJump)
+                {
+                    Jump = true;
+                }
+            }
+        }
+
+
+            if (grounded)
+            {
+                DashAmount = 0.0f;
+                isDashing = false;
+                CanJump = true;
+            }
+
+        if (!grounded)
+        {
+            JumpHeight = 0.0f;
+            if (DashAmount < 1.0f)
+            {
+                CanDash = true;
+
+            }
+            CanJump = false;
+
+        }
 
         if (Input.GetKeyDown(KeyCode.RightArrow) && CanDash && !grounded)
         {
@@ -126,6 +133,7 @@ public class PlayerController : MonoBehaviour
             Debug.Log("Player Jumped");
             Jump = true;
         }
+
         
     }
 
@@ -134,94 +142,103 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
 
-		//Autoscroller so the player has to move on a vector2 in the x axis
-//		Vector2 newVelocity = rb2d.velocity;
-//		newVelocity.x = PlayerSpeed;
-//		rb2d.velocity = newVelocity;
 
-		transform.Translate(8.0f * Time.deltaTime, 0f, 0f);
+		transform.Translate(Vector3.right * 8.0f * Time.fixedDeltaTime);
 
         if (Dash)
         {
-            rb2d.mass = 0.1f;
-            rb2d.AddForce(Vector2.right * DashSpeed);
+            rb2d.mass = 1.0f;
+            rb2d.AddRelativeForce(new Vector2 (DashSpeed,0),ForceMode2D.Impulse);
 			DashAmount = DashAmount+1.0f;
+            isDashing = true;
             Dash = false;
-			CanDash = false;
+            CanDash = false;
         }
 
         if (!Dash)
         {
-            rb2d.mass = 1.0f;
+            rb2d.mass = 1.35f;
         }
 
-		if (Fly)
-		{
-			//add upwards force but on a relative time maybe delta? if the player collides with the other platform then switch the gravity to that side
-			Debug.Log("Player Flying");
-		}
-
-        if (Jump && CanJump) {
-			JumpHeight = 500.0f;
-			rb2d.AddForce (Vector2.up * JumpHeight);
-			Jump = false;
-
-		} 
-
-        if (grounded)
+        if (Jump)
         {
-			DashAmount = 0.0f;
-            CanJump = true;
-			CanFly = true;
-            Debug.Log("Player Grounded");
-        }
-
-        if (!grounded)
-        {
-            JumpHeight = 0.0f;
-            if(DashAmount < 1.0f)
-			{
-				CanDash = true;
-
-			}
+            JumpHeight = 500.0f;
+            if (isOnTop)
+            {
+                rb2d.AddForce(Vector2.down * JumpHeight);
+            }
+            else if (isOnBottom)
+            {
+                rb2d.AddForce(Vector2.up * JumpHeight);
+            }
+            Jump = false;
             CanJump = false;
 
         }
 
-//		if (SwitchUp)
-//		{
-//			rb2d.AddForce(Vector2.up* 600.0f);
-//			rb2d.gravityScale *= -1;
-//			
-//		}
-//		else if (SwitchDown)
-//		{
-//			//make gravity normal so that the player is on the bottom half of the screen
-//			rb2d.AddForce(Vector2.down* 600.0f);
-//			rb2d.gravityScale *= 1;
-//
-//		}
 
+		if (SwitchUp)
+		{
+            //rb2d.gravityScale = -1;
+            Physics2D.gravity = new Vector2(0, 9.81f);
+
+            if (SwitchUp && grounded)
+			{
+				isOnTop = true;
+				isOnBottom = false;
+			}
+			
+		}
+		else if (SwitchDown)
+		{
+			//make gravity normal so that the player is on the bottom half of the screen
+            //rb2d.gravityScale = 1;
+            Physics2D.gravity = new Vector2(0, -9.81f);
+            if (SwitchDown && grounded)
+			{
+				isOnTop = false;
+				isOnBottom = true;
+			}
+          
+		}
 
 
     }
 
+    //public void OnFingerTap(Lean.LeanFinger Finger)
+    //{
+    //    if (Finger.IsOverGui == false)
+    //    {
+    //        if (grounded && CanJump)
+    //        {
+    //            Debug.Log("Player Touch Jumped");
+    //            Jump = true;
+    //        }
+    //    }
+    //}
 
-
-    void OnTriggerEnter2D(Collider2D other)
+    public void OnFingerSwipe(Lean.LeanFinger Finger)
     {
-        if (other.CompareTag("Ground"))
-            grounded = true;
+        Vector2 swipe = Finger.SwipeDelta;
 
+        if (swipe.x > Mathf.Abs(swipe.y) && CanDash && !grounded)
+        {
+            Dash = true;
+        }
 
+        if (swipe.y < -Mathf.Abs(swipe.x) && grounded)
+        {
+            SwitchDown = true;
+            SwitchUp = false;
+        }
+
+        if (swipe.y > Mathf.Abs(swipe.x) && grounded)
+        {
+            SwitchUp = true;
+            SwitchDown = false;
+        }
     }
 
-    void OnTriggerExit2D(Collider2D other)
-    {
-        if (other.CompareTag("Ground"))
-            grounded = false;
-        Debug.Log("Player in air");
-    }
 
 
 

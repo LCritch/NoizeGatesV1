@@ -5,6 +5,7 @@ using System.Collections.Generic;
 public class GroundGenerator : MonoBehaviour {
 
 	public GameObject GroundPrefab;
+	public GameObject NewTileTrigger;
 	public Transform TileSpawnPoint;
 
 	// Use this for initialization
@@ -16,7 +17,8 @@ public class GroundGenerator : MonoBehaviour {
 
 	void OnTriggerEnter2D(Collider2D other)
 	{
-		if(other.tag == "Player")
+
+		if(other.tag == "Player" )
 		{
 			Instantiate(GroundPrefab, TileSpawnPoint.position,TileSpawnPoint.rotation);
 		}

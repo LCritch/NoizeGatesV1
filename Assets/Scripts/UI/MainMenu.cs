@@ -44,6 +44,12 @@ public class MainMenu : MonoBehaviour
 	private string CurrentTrackTitle;
 	public string CustomTrackLocation;
 
+    private float Minutes;
+    private float Seconds;
+    private float Fraction;
+
+    private bool SongSelected;
+
     // Use this for initialization
     void Start()
     {
@@ -76,6 +82,8 @@ public class MainMenu : MonoBehaviour
 		CustomLevelsCanvas.enabled = false;
 		CustomLevelWarnCanvas.enabled = false;
 		MainLevelsCanvas.enabled = false;
+
+
 
     }
 
@@ -111,6 +119,7 @@ public class MainMenu : MonoBehaviour
 	{
 		CustomLevelsCanvas.enabled = true;
 		CustomLevelWarnCanvas.enabled = false;
+        PlayCustomTrack.enabled = false;
 	}
 
 
@@ -148,6 +157,7 @@ public class MainMenu : MonoBehaviour
 	{
 		GetComponent<AudioSource>().clip = importer.ImportFile(path);
 		CustomTrackLocation = path;
+        SongSelected = true;
 		GetComponent<AudioSource>().Play();
 	}
 
@@ -160,11 +170,19 @@ public class MainMenu : MonoBehaviour
 			
 			importer.OpenBrowser();
 
-			SongSeconds = ASource.clip.length;
-            CurrentTrackTitle = ASource.clip.ToString().Replace("(UnityEngine.AudioClip)", "");
+            if (SongSelected)
+            {
+                PlayCustomTrack.enabled = true;
+                SongSeconds = ASource.clip.length;
+                CurrentTrackTitle = ASource.clip.ToString().Replace("(UnityEngine.AudioClip)", "");
 
-            CurrentPlayingTrack.text = "File Name: " + CurrentTrackTitle;
-			CurrentPlayingSeconds.text = "File Seconds: " + SongSeconds.ToString() + " Seconds";
+                Minutes = ASource.clip.length / 60.0f;
+                Seconds = ASource.clip.length % 60.0f;
+                Fraction = (ASource.clip.length * 100.0f) % 100.0f;
+
+                CurrentPlayingTrack.text = "File Name: " + CurrentTrackTitle;
+                CurrentPlayingSeconds.text = "File Length: " + string.Format("{0:00}:{1:00}:{2:00}", Minutes, Seconds, Fraction);
+            }
 		}
 		else{
 			importer.CloseBrowser();

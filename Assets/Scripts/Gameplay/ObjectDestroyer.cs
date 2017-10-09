@@ -27,6 +27,8 @@ public class ObjectDestroyer : MonoBehaviour {
 		}
 		else{
 			Destroy(other.gameObject);
+
+
 		}
 
 	}
